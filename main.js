@@ -7,6 +7,9 @@ import { Score } from './score.js';
 import { HP } from './hp.js';
 import { Boss } from './boss.js';
 import { Explosion } from './explosion.js';
+import { SpriteSheetLoader } from './spriteLoader.js';
+export const spriteLoader = new SpriteSheetLoader("image/enemy.png", 32, 32); 
+
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -24,6 +27,7 @@ let explosions = []; // 爆発エフェクト用
 
 
 let gameState = "title";  // "title", "playing", "gameover", "clear"
+
 
 // 敵出現タイマー（1秒ごと）
 setupInput();
@@ -45,15 +49,19 @@ function update() {
   enemies = enemies.filter(e => e.y < canvas.height + e.height);
 
   // 弾と敵の衝突
-  bullets.forEach((b, bi) => {
-    enemies.forEach((e, ei) => {
-      if (isColliding(b, e)) {
-        bullets.splice(bi, 1);
+bullets.forEach((b, bi) => {
+  enemies.forEach((e, ei) => {
+    if (isColliding(b, e)) {
+      bullets.splice(bi, 1);
+      e.damage(); // タイプにより複数HP対応
+      if (e.isDead()) {
         enemies.splice(ei, 1);
         score.add(100);
       }
-    });
+    }
   });
+});
+
 
   // プレイヤーと敵の衝突
   enemies.forEach((e, ei) => {
@@ -82,7 +90,6 @@ if (boss) {
 
   // 🎯 弾がボスに当たったらダメージ＆削除
   const bulletsToRemove = [];
-
   for (let i = 0; i < bullets.length; i++) {
     const bullet = bullets[i];
     if (isColliding(bullet, boss)) {
@@ -90,30 +97,9 @@ if (boss) {
       bulletsToRemove.push(i);
     }
   }
-
-  // 弾を削除（逆順で）
   bulletsToRemove.reverse().forEach(i => bullets.splice(i, 1));
 
-  // 💥 ボス撃破時
-if (boss.isDead()) {
-  // 💥 爆発を登録
-  explosions.push(new Explosion(boss.x + boss.width / 2, boss.y + boss.height / 2));
-
-  boss = null;
-  gameState = "clear";
-}
-
-
-  // 🔥 プレイヤーとボスの当たり
-if (boss && isColliding(player, boss)) {
-  hp.damage(1);
-  if (hp.isZero()) {
-    gameState = "gameover";
-  }
-}
-
-
-  // 🔫 ボスの弾とプレイヤーの当たり
+  // 🔫 ボスの弾とプレイヤーの当たり（← boss が null になる前に処理）
   const bossBullets = boss.getBullets();
   const bossHits = [];
 
@@ -128,16 +114,28 @@ if (boss && isColliding(player, boss)) {
     }
   }
   bossHits.reverse().forEach(i => bossBullets.splice(i, 1));
-  
+
+  // 🔥 プレイヤーとボスの当たり
+  if (isColliding(player, boss)) {
+    hp.damage(1);
+    if (hp.isZero()) {
+      gameState = "gameover";
+    }
+  }
+
+  // 💥 ボス撃破時（最後に boss を null にする）
+  if (boss.isDead()) {
+    explosions.push(new Explosion(boss.x + boss.width / 2, boss.y + boss.height / 2));
+    gameState = "clear";
+    boss = null;
+  }
 }
 
 
 }
 
 function draw() {
-    explosions.forEach(e => e.draw(ctx));
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // ← 必ず最初にクリア！
 
   if (gameState === "title") {
     ctx.fillStyle = "white";
@@ -154,6 +152,7 @@ function draw() {
   if (boss) boss.draw(ctx);
   score.draw(ctx);
   hp.draw(ctx, canvas.width);
+  explosions.forEach(e => e.draw(ctx)); // ← ここに移動！
 
   if (gameState === "gameover") {
     ctx.fillStyle = "white";
@@ -167,6 +166,7 @@ function draw() {
     ctx.fillText("MISSION COMPLETE!", canvas.width / 2 - 150, canvas.height / 2);
   }
 }
+
 
 function loop() {
   if (gameState === "playing") {
@@ -200,5 +200,4 @@ function resetGame() {
   score.value = 0;
   hp.reset();
   gameState = "playing";
-  loop();
 }

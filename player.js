@@ -2,10 +2,13 @@ export class Player {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.width = 20;
-    this.height = 20;
-    this.speed = 5;
-    this.color = "cyan";
+    this.width = 32;  // 画像サイズに合わせて調整
+    this.height = 32;
+    this.speed = 3;
+
+    // 画像の読み込み
+    this.image = new Image();
+    this.image.src = "image/player.png";
   }
 
   update(keys, canvas) {
@@ -16,7 +19,12 @@ export class Player {
   }
 
   draw(ctx) {
-    ctx.fillStyle = this.color;
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    if (this.image.complete) {
+      ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+    } else {
+      // 読み込み中なら仮の矩形
+      ctx.fillStyle = "cyan";
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
   }
 }
