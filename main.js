@@ -8,8 +8,9 @@ import { HP } from './hp.js';
 import { Boss } from './boss.js';
 import { Explosion } from './explosion.js';
 import { SpriteSheetLoader } from './spriteLoader.js';
-export const spriteLoader = new SpriteSheetLoader("image/enemy.png", 32, 32); 
-
+import { TitleScreen } from './titleScreen.js';
+export const spriteLoader = new SpriteSheetLoader("image/enemy.png", 2, 2); 
+export const bossSprite = new SpriteSheetLoader("image/dragon.png", 1, 1);
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -17,6 +18,7 @@ const ctx = canvas.getContext("2d");
 const player = new Player(canvas.width / 2 - 10, canvas.height - 50);
 const score = new Score();
 const hp = new HP(3);
+const titleScreen = new TitleScreen(ctx, ["Start Game", "Exit", "Settings"]);
 
 let bullets = [];
 let enemies = [];
@@ -24,7 +26,6 @@ let boss = null;
 let bossSpawned = false;
 
 let explosions = []; // 爆発エフェクト用
-
 
 let gameState = "title";  // "title", "playing", "gameover", "clear"
 
@@ -36,6 +37,7 @@ setInterval(() => {
     enemies.push(spawnEnemy(canvas.width));
   }
 }, 1000);
+
 
 function update() {
   if (gameState !== "playing") return;
@@ -134,15 +136,12 @@ if (boss) {
 
 }
 
+// 🔁 draw 関数を修正
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height); // ← 必ず最初にクリア！
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (gameState === "title") {
-    ctx.fillStyle = "white";
-    ctx.font = "28px sans-serif";
-    ctx.fillText("NEO STAR BATTLE", canvas.width / 2 - 140, canvas.height / 2 - 40);
-    ctx.font = "20px sans-serif";
-    ctx.fillText("Press Enter to Start", canvas.width / 2 - 100, canvas.height / 2 + 10);
+    titleScreen.draw();  // ← クラスのメソッドを呼ぶ
     return;
   }
 
@@ -152,7 +151,7 @@ function draw() {
   if (boss) boss.draw(ctx);
   score.draw(ctx);
   hp.draw(ctx, canvas.width);
-  explosions.forEach(e => e.draw(ctx)); // ← ここに移動！
+  explosions.forEach(e => e.draw(ctx));
 
   if (gameState === "gameover") {
     ctx.fillStyle = "white";
@@ -168,6 +167,7 @@ function draw() {
 }
 
 
+
 function loop() {
   if (gameState === "playing") {
     update();
@@ -178,17 +178,25 @@ function loop() {
 
 loop();
 
-document.addEventListener("keydown", (e) => {
-  if (e.code === "Space" && gameState === "playing") {
-    bullets.push(new Bullet(player.x + player.width / 2 - 2, player.y));
-  }
 
-  if (e.code === "Enter") {
-    if (["title", "gameover", "clear"].includes(gameState)) {
+document.addEventListener("keydown", (e) => {
+  if (gameState === "title") {
+    const action = titleScreen.handleKeyDown(e);
+    if (action === "Start Game") resetGame();
+    if (action === "Exit") window.close();
+    if (action === "Settings") console.log("Settings menu not implemented yet.");
+  } else if (gameState === "playing") {
+    if (e.code === "Space") {
+      bullets.push(new Bullet(player.x + player.width / 2 - 2, player.y));
+    }
+  } else if (["gameover", "clear"].includes(gameState)) {
+    if (e.code === "Enter") {
       resetGame();
     }
   }
 });
+
+
 
 function resetGame() {
   player.x = canvas.width / 2 - 10;
@@ -201,3 +209,5 @@ function resetGame() {
   hp.reset();
   gameState = "playing";
 }
+
+

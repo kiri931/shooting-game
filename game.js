@@ -26,6 +26,8 @@ document.addEventListener("keyup", (e) => {
   keys[e.code] = false;
 });
 
+
+
 // 弾を発射
 function shoot() {
   bullets.push({

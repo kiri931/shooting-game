@@ -1,4 +1,4 @@
-import { spriteLoader } from './main.js'; // グローバルに読み込んでおく
+import { spriteLoader } from './main.js';
 
 export class Enemy {
   constructor(x, y, type = "normal") {
@@ -44,13 +44,13 @@ export class Enemy {
   }
 
   draw(ctx) {
+
     if (spriteLoader.loaded) {
-      spriteLoader.drawSprite(ctx, this.spriteIndex, this.x, this.y, this.width, this.height);
+      spriteLoader.drawRotatedSprite(ctx, this.spriteIndex, this.x, this.y, this.width, this.height,Math.PI);
     } else {
       // 画像読み込み中のフォールバック表示
       ctx.fillStyle = "red";
       ctx.fillRect(this.x, this.y, this.width, this.height);
-      console.log("Image not loaded yet - showing fallback");
     }
   }
 
